@@ -1,0 +1,3 @@
+"""
+myITS Classroom MCP package.
+"""
