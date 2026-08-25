@@ -166,11 +166,23 @@ Contoh respons `get_course_contents(8518)`:
 
 ### 5.1 Instalasi
 
+Menggunakan `uv` (direkomendasikan):
+
+```bash
+cd ~/myits-classroom-mcp
+uv venv
+uv pip install -r requirements.txt
+```
+
+Atau pip standar:
+
 ```bash
 cd ~/myits-classroom-mcp
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
+
+---
 
 ### 5.2 Mengisi Sesi: Lewat Chat atau .env
 
@@ -247,24 +259,30 @@ Urutan pembacaan cookie oleh server: `_SESSION_OVERRIDE` (hasil `set_session`) �
 
 ```bash
 cd ~/myits-classroom-mcp
-.venv/bin/python server.py        # stdio mode (untuk client MCP)
+uv run python server.py        # stdio mode (untuk client MCP)
 ```
 
 Uji cepat tanpa client MCP:
 
 ```bash
-.venv/bin/python -c "
+uv run python -c "
 import server
 print(server.get_profile())
 for c in server.list_courses(): print(c['id'], c['fullname'])
 "
 ```
 
+Uji unit test suite:
+
+```bash
+uv run python -m unittest discover -s tests
+```
+
 ### 5.5 Contoh Prompt untuk Agent
 
 Setelah MCP aktif, cukup bicara natural:
 
-- *"Aja mata kuliah gue dong"* → `list_courses`
+- *"Ajar mata kuliah gue dong"* → `list_courses`
 - *"Deadline minggu ini apa aja?"* → `get_deadlines(days_ahead=7)`
 - *"Ambil materi Jaringan Komputer"* → `list_courses` → `get_course_contents`
 - *"Tugas Routing Protokol due-nya kapan? udah kekumpul belum?"* → `get_assignment_detail(cmid=314710)`
@@ -272,12 +290,36 @@ Setelah MCP aktif, cukup bicara natural:
 
 ---
 
-## 6. Struktur Project
+## 6. Struktur Project (N-Tier Architecture)
+
+Project ini menerapkan **N-Tier Architecture** dengan pemisahan layer yang jelas:
 
 ```
 myits-classroom-mcp/
-├── server.py          # seluruh implementasi (FastMCP + httpx + BeautifulSoup)
-├── requirements.txt   # fastmcp, httpx, beautifulsoup4, python-dotenv
-├── .env               # MOODLE_SESSION (jangan di-commit!)
-└── README.md          # dokumen ini
+├── server.py                            # Entry point utama (FastMCP server & backward compatibility)
+├── requirements.txt                     # Dependensi: fastmcp, httpx, beautifulsoup4, python-dotenv
+├── .env                                 # MOODLE_SESSION (jangan di-commit!)
+├── README.md                            # Dokumen teknis
+├── tests/                               # Test suite
+│   └── test_architecture.py             # Unit test pemisahan layer & registrasi tool
+└── src/                                 # Package Utama
+    ├── config.py                        # Konfigurasi sistem, URL dasar, & regex
+    ├── domain/                          # Domain Tier (DTO & Type Definitions)
+    │   └── models.py                    # Data classes & TypedDict (CourseInfo, AssignmentDetail, dll)
+    ├── infrastructure/                  # Infrastructure / Data Access Tier
+    │   ├── session_repository.py        # Sesi & penyimpan .env
+    │   ├── moodle_client.py             # Wrapper HTTP Client (httpx)
+    │   ├── moodle_ajax.py               # Komunikasi AJAX Moodle (/lib/ajax/service.php)
+    │   ├── moodle_parser.py             # HTML Scraper & Parser (BeautifulSoup)
+    │   └── file_downloader.py           # Downloader file terotentikasi
+    ├── services/                        # Application / Business Logic Tier
+    │   ├── session_service.py           # Layanan manajemen & validasi sesi
+    │   ├── user_service.py              # Layanan info profil pengguna
+    │   ├── course_service.py            # Layanan mata kuliah, materi, & tugas
+    │   ├── assignment_service.py        # Layanan detail tugas & download file
+    │   ├── calendar_service.py          # Layanan deadline & agenda kalender
+    │   └── grade_service.py             # Layanan laporan nilai
+    └── presentation/                    # Presentation Tier
+        └── mcp_tools.py                 # Registrasi tools FastMCP (@mcp.tool())
 ```
+
