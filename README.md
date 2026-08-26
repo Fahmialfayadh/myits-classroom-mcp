@@ -102,21 +102,22 @@ Resource view (`/mod/resource/view.php?id=<cmid>`) me-redirect 303 ke `pluginfil
 
 ### 2.6 Ringkasan Alur
 
-```
-┌─────────────┐  MoodleSession   ┌──────────────────────────────────┐
-│ MCP Client  │ ───────────────► │ server.py                        │
-│ (Claude/    │                  │                                  │
-│  opencode)  │                  │ 1. GET /my/ → sesskey + userId   │
-└─────────────┘                  │ 2. Data terstruktur:             │
-                                 │    POST /lib/ajax/service.php    │
-                                 │    (courses, calendar/deadline)  │
-                                 │ 3. Fallback:                     │
-                                 │    GET /course/view.php,         │
-                                 │    /mod/assign/view.php,         │
-                                 │    /grade/report/user/...        │
-                                 │    → parse HTML (bs4)            │
-                                 │ 4. File: pluginfile.php          │
-                                 └──────────────────────────────────┘
+```mermaid
+
+graph LR
+    Client["<b>MCP Client</b><br/>(Claude / opencode)"]
+
+    subgraph Server ["server.py"]
+        direction TB
+        Step1["1. GET /my/ → sesskey + userId"]
+        Step2["2. Data terstruktur:<br/>POST /lib/ajax/service.php<br/>(courses, calendar/deadline)"]
+        Step3["3. Fallback:<br/>GET /course/view.php,<br/>/mod/assign/view.php,<br/>/grade/report/user/...<br/>→ parse HTML (bs4)"]
+        Step4["4. File: pluginfile.php"]
+
+        Step1 --> Step2 --> Step3 --> Step4
+    end
+
+    Client -- "MoodleSession" --> Step1
 ```
 
 ---
@@ -290,7 +291,7 @@ Setelah MCP aktif, cukup bicara natural:
 
 ---
 
-## 6. Struktur Project (N-Tier Architecture)
+## 6. Struktur Project 
 
 Project ini menerapkan **N-Tier Architecture** dengan pemisahan layer yang jelas:
 
